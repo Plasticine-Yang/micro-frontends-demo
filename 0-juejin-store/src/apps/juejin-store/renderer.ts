@@ -1,3 +1,4 @@
+import createEventListeners from './event-listeners'
 import {
   getDisplayProductList,
   getProductById,
@@ -6,12 +7,23 @@ import {
 import { loadImage } from './utils'
 
 function createRenderer($app: App) {
-  const state = {
-    // 当前展示的商品 id
+  const state: IState = {
     productId: 1,
-    // 购物车中商品数量
     basketCount: 0,
   }
+
+  /**
+   * @description 更新 state
+   * @param cb 更新 state 的回调
+   */
+  const setState: SetState = cb => {
+    cb(state)
+  }
+
+  const { addEventListeners, removeEventListeners } = createEventListeners({
+    setState,
+    rerender,
+  })
 
   function render() {
     // 获取当前展示的商品
@@ -63,8 +75,10 @@ function createRenderer($app: App) {
     const renderProductItem = (product: IProduct): string => {
       const active = product.id === state.productId
       return `
-        <div class="product-list-item ${active ? 'active' : ''}">
-          <img src="${loadImage(product.cover)}" alt="${product.name}" />
+        <div class="product-list-item ${active ? 'active' : ''}" >
+          <img src="${loadImage(product.cover)}" alt="${
+        product.name
+      }" data-product-id="${product.id}" />
         </div>
       `
     }
@@ -82,7 +96,7 @@ function createRenderer($app: App) {
         <div class="related-product-list-item">
           <img src="${loadImage(relatedProduct.cover)}" alt="${
         relatedProduct.name
-      }" />
+      }" data-product-id="${relatedProduct.id}" />
         </div>
       `
     }
@@ -94,8 +108,19 @@ function createRenderer($app: App) {
       .join('')
   }
 
+  function rerender() {
+    removeEventListeners()
+    render()
+    addEventListeners()
+  }
+
+  function run() {
+    render()
+    addEventListeners()
+  }
+
   return {
-    render,
+    run,
   }
 }
 
