@@ -1,0 +1,129 @@
+@use './variables';
+
+// 屏幕宽度小于 1180px 时纵向排列
+@media only screen and (max-width: 1180px) {
+  .juejin-store {
+    grid-template-areas:
+      'title            basket'
+      'previewer        product-name'
+      'previewer        product-list'
+      'previewer        purchase-btn'
+      'related-products related-products';
+    grid-template-columns: 4fr 3fr;
+  }
+}
+
+// 屏幕宽度大于 1180px 时横向排列
+@media only screen and (min-width: 1180px) {
+  .juejin-store {
+    grid-template-areas:
+      'title     basket       related-products'
+      'previewer product-name related-products'
+      'previewer product-list related-products'
+      'previewer purchase-btn related-products';
+    grid-template-columns: 3fr 4fr 200px;
+  }
+}
+
+// 屏幕宽度小于 1180px 时的分割线
+@media only screen and (max-width: 1180px) {
+  .related-products {
+    border-top: 1px dashed white;
+    padding-top: 20px;
+  }
+}
+
+// 屏幕宽度大于 1180px 时的分割线
+@media only screen and (min-width: 1180px) {
+  .related-products {
+    border-left: 1px dashed white;
+    padding-left: 20px;
+  }
+}
+
+.juejin-store {
+  // grid 布局
+  display: grid;
+  column-gap: 20px;
+  row-gap: 10px;
+  min-width: 300px;
+  margin: 0 100px;
+
+  padding: 30px;
+  border-radius: 30px;
+  background-color: variables.$bg-primary;
+
+  // 标题
+  .title {
+    grid-area: title;
+  }
+
+  // 购物车
+  .basket {
+    grid-area: basket;
+    justify-self: end;
+    background-color: variables.$bg-secondary;
+    padding: 5px 10px;
+    border-radius: 10px;
+  }
+
+  // 商品图片预览
+  .previewer {
+    grid-area: previewer;
+    width: 100%;
+
+    img {
+      border-radius: 20px;
+      width: 100%;
+    }
+  }
+
+  // 商品名
+  .product-name {
+    grid-area: product-name;
+  }
+
+  // 商品列表
+  .product-list {
+    grid-area: product-list;
+    align-self: center;
+    display: flex;
+    gap: 20px;
+    height: 100%;
+
+    // 商品项
+    .product-list-item {
+      display: flex;
+      align-items: flex-end;
+
+      cursor: pointer;
+      // 底部激活状态条
+      padding-bottom: 3px;
+      border-bottom: 3px solid transparent;
+      height: 100%;
+
+      &.active,
+      &:hover {
+        border-bottom-color: variables.$primary-color;
+      }
+
+      img {
+        border-radius: 10px;
+        display: block;
+        width: 100%;
+        max-height: 100%;
+        object-fit: cover;
+      }
+    }
+  }
+
+  // 购买按钮
+  .purchase-btn {
+    grid-area: purchase-btn;
+  }
+
+  // 关联商品
+  .related-products {
+    grid-area: related-products;
+  }
+}
