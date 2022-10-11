@@ -48,6 +48,12 @@
 
 ![image.png](https://p1-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/2ebacfd44048497eb686704d2870db71~tplv-k3u1fbpfcp-watermark.image?)
 
+还做了响应式布局，可以在移动端浏览:
+
+![image.png](https://p6-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/ccda28e373ea439ea15fd68f8be0b431~tplv-k3u1fbpfcp-watermark.image?)
+
+![image.png](https://p9-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/479ccdb318854a50a5cadd72ca482c73~tplv-k3u1fbpfcp-watermark.image?)
+
 它的功能包括:
 
 1. 切换商品时，商品详情和关联商品也会相应切换
