@@ -4,7 +4,8 @@ interface Options {
 }
 
 function createEventListeners({ setState, rerender }: Options) {
-  function addEventListeners() {
+  // 添加或者移除事件监听函数
+  function manageEventListeners(mode: 'add' | 'remove') {
     const $productList = document.querySelector<HTMLElement>('.product-list')!
     const $purchaseBtn =
       document.querySelector<HTMLButtonElement>('.purchase-btn')!
@@ -12,22 +13,19 @@ function createEventListeners({ setState, rerender }: Options) {
       '.related-product-list',
     )!
 
-    $productList.addEventListener('click', handleChangeProduct)
-    $purchaseBtn.addEventListener('click', handlePurchaseProduct)
-    $relatedProductList.addEventListener('click', handleRelatedProductClick)
+    const manage = mode === 'add' ? 'addEventListener' : 'removeEventListener'
+
+    $productList[manage]('click', handleChangeProduct as any)
+    $purchaseBtn[manage]('click', handlePurchaseProduct)
+    $relatedProductList[manage]('click', handleRelatedProductClick as any)
+  }
+
+  function addEventListeners() {
+    manageEventListeners('add')
   }
 
   function removeEventListeners() {
-    const $productList = document.querySelector<HTMLElement>('.product-list')!
-    const $purchaseBtn =
-      document.querySelector<HTMLButtonElement>('.purchase-btn')!
-    const $relatedProductList = document.querySelector<HTMLElement>(
-      '.related-product-list',
-    )!
-
-    $productList.removeEventListener('click', handleChangeProduct)
-    $purchaseBtn.removeEventListener('click', handlePurchaseProduct)
-    $relatedProductList.removeEventListener('click', handleRelatedProductClick)
+    manageEventListeners('remove')
   }
 
   /**
