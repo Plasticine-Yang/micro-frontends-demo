@@ -46,7 +46,9 @@ function createRenderer($app: App) {
       <section class="product-list">${renderProductList()}</section>
 
       <!-- 购买按钮 -->
-      <bar-purchase-btn class="purchase-btn"></bar-purchase-btn>
+      <bar-purchase-btn class="purchase-btn" product-id="${
+        product?.id
+      }"></bar-purchase-btn>
 
       <!-- 关联商品 -->
       <foo-related-products class="related-products" product-id="${
