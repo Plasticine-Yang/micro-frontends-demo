@@ -725,4 +725,370 @@ const handleRelatedProductClick = handleChangeProduct
 
 至此这个小案例就完成啦，样式部分的代码就不展示了，感兴趣的可以到我的仓库中查看源码，如果觉得不错的话欢迎点个 star~
 
-> 源码: https://github.com/Plasticine-Yang/micro-frontends-demo
+> 源码: https://github.com/Plasticine-Yang/micro-frontends-demo/tree/main/0-juejin-store
+
+# 简易掘金商城案例 -- 微前端方案
+
+## 思考微前端架构需要解决的问题
+
+前面我们用传统方案开发的掘金商城中，存在以下几个问题:
+
+1. 所有的`html`都是由客户端的`js`动态生成的，也就是纯客户端渲染，这不利于`SEO`并且可能存在首屏白屏时间过长的问题(本项目中逻辑简单，不存在白屏很长的情况，但放到规模大一些的项目中来看就不一样了)
+2. 只要`state`数据发生改变就会导致整个页面重新渲染，没有任何的`diff`算法优化进行局部更新，比如点击购买的时候只需要修改购物车状态对应的视图即可，没必要修改商品列表和关联商品中的内容，但传统方案实现中是简单粗暴地直接调用`rerender`进行全部内容的重新渲染的
+3. 所有代码都是在一个项目中维护的，没有拆分成不同模块并交由不同团队去负责
+
+为了解决以上几个问题，我们需要通过微前端的架构思想来进行优化，关于第一个问题可以由服务端渲染来解决，但这个不是重点，我们先仍然使用客户端渲染的方式进行开发
+
+### 项目模块拆分
+
+为了能够让不同团队来负责不同模块，我们首先需要将整个掘金商城拆分成不同的模块，拆分结果如下:
+
+![模块拆分.png](https://p9-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/ae0551fa0b95466b822c186a6eead379~tplv-k3u1fbpfcp-watermark.image?)
+
+红色框圈住的是整个主应用，主应用决定了整个项目有哪些功能以及应用的整体布局，主应用负责展示商品的封面图片，商品名和商品列表，而商品的购买和关联商品则拆分成两个独立的模块应用，模块应用有独立的团队去负责实现
+
+模块应用之间相互独立，模块提供的产物是`WebComponent`，这样就能够在模块应用加载完毕后直接在主应用中组合使用各个模块，模块之间的部署可以是独立的，只要保证能够在主应用中获取到模块应用的部署产物即可
+
+每个模块都由独立的团队负责，为了区分不同团队，我们约定一下关联商品模块的团队名为`foo`，购买商品模块的团队名为`bar`
+
+### 其他问题
+
+微前端架构最重要的是思考如何解决下面的几个问题:
+
+1. 模块之间`js`隔离机制
+2. 避免`css`样式冲突
+3. 按需加载资源
+4. 在团队之间共享公共资源
+5. 处理异步数据的获取以及为用户考虑良好的加载状态
+
+明白了大致思路后，就需要考虑下如何将项目进行拆分，拆分成可以独立存在的多个模块应用
+
+## 主应用
+
+首先我们来实现主应用，核心在于渲染器的实现，直接参考传统方案中的渲染器实现，并把购买相关的渲染和关联商品相关的渲染移除，然后改为引用相应模块提供的`WebComponent Custom Elements`的方式，核心代码如下:
+
+```ts
+function render() {
+  // 获取当前展示的商品
+  const product = getProductById(state.productId)
+
+  $app.innerHTML = `
+    <section class="juejin-store">
+      <!-- 标题 -->
+      <h1 class="title">掘金商城</h1>
+
+      <!-- 购物车 -->
+      <bar-basket class="basket"></bar-basket>
+
+      <!-- 商品图片预览 -->
+      <section class="previewer">
+        <img src="${loadImage(product?.cover ?? 'no-data.png')}" alt="${
+    product?.name ?? '未知商品'
+  }" />
+      </section>
+
+      <!-- 商品名 -->
+      <h3 class="product-name">${product?.name ?? '未知商品'}</h3>
+
+      <!-- 商品列表 -->
+      <section class="product-list">${renderProductList()}</section>
+
+      <!-- 购买按钮 -->
+      <bar-purchase-btn class="purchase-btn"></bar-purchase-btn>
+
+      <!-- 关联商品 -->
+      <foo-related-products class="related-products"></foo-related-products>
+    </section>
+    `
+}
+```
+
+注意，为了防止团队之间自定义元素的命名冲突，我们要遵守前面提到的微前端架构背后的核心思想，注册和使用自定义元素时都需要加上团队名前缀以示区分
+
+现在我们的主应用就将商品的购买逻辑和关联商品的逻辑独立出去了，只需要等相应团队开发完成后将他们提供的`WebComponent`注册到主应用中即可
+
+完整代码可以到我的仓库中查看，这里更多的是代码结构上的调整，代码内容大致上是一样的，就不贴出来了
+
+> 源码: https://github.com/Plasticine-Yang/micro-frontends-demo/tree/main/1-composition-client-only/main-app
+
+## foo 团队 -- 关联商品模块应用
+
+`foo`团队的主要任务就是完成关联商品模块，我们以`CustomElements`的方式去实现，最终注册到全局即可
+
+```ts
+import { getProductById, getRelatedProducts } from './model'
+import { loadImage } from './utils'
+
+class FooRelatedProducts extends HTMLElement {
+  // 被观察的数据在更新时会触发 attributeChangedCallback 回调
+  static get observedAttributes() {
+    return ['product-id']
+  }
+
+  // 元素被注册时会调用该钩子
+  connectedCallback() {
+    const product = this.getProduct()
+    this.log(`connected! product: ${product}`)
+    this.render()
+  }
+
+  // product-id 更新时重新渲染对应的关联商品
+  attributeChangedCallback(
+    attrName: string,
+    oldValue: string,
+    newValue: string,
+  ) {
+    this.log(`attr changed: ${attrName} -- from ${oldValue} to ${newValue}`)
+
+    switch (attrName) {
+      case 'product-id':
+        this.render()
+        break
+    }
+  }
+
+  // 根据调用者传入的 prop: 商品 id 来获取商品对象
+  getProduct() {
+    const productId = this.getAttribute('product-id')
+
+    if (productId) {
+      const product = getProductById(Number(productId))
+      return product
+    }
+
+    return null
+  }
+
+  // html 模板
+  template() {
+    const product = this.getProduct()
+
+    const template = document.createElement('template')
+    template.innerHTML = `
+      <style>
+        .related-product-list {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          margin-top: 20px;
+        }
+
+        .related-product-list-item {
+          cursor: pointer;
+
+          img {
+            width: 100%;
+            border-radius: 20px;
+          }
+        }
+      </style>
+
+      <section>
+        <h3>关联商品</h3>
+
+        <!-- 关联商品列表 -->
+        <section class="related-product-list">${
+          product && this.renderRelatedProductList(product)
+        }</section>
+      </section>
+      `
+
+    return template.content.cloneNode(true)
+  }
+
+  /**
+   * @description 渲染商品的关联商品
+   * @param product 商品
+   */
+  renderRelatedProductList(product: IProduct): string {
+    const renderRelatedProductItem = (relatedProduct: IProduct): string => {
+      return `
+        <div class="related-product-list-item">
+          <img src="${loadImage(relatedProduct.cover)}" alt="${
+        relatedProduct.name
+      }" data-product-id="${relatedProduct.id}" />
+        </div>
+      `
+    }
+
+    return getRelatedProducts(product.id)
+      .map(relatedProduct =>
+        relatedProduct ? renderRelatedProductItem(relatedProduct) : '',
+      )
+      .join('')
+  }
+
+  render() {
+    const clonedTemplateNode = this.template()
+
+    this.attachShadow({ mode: 'closed' })
+    this.shadowRoot!.appendChild(clonedTemplateNode)
+  }
+
+  log(...args: any[]) {
+    console.log('team-foo', ...args)
+  }
+}
+
+// 将自定义元素注册到全局
+window.customElements.define('foo-related-products', FooRelatedProducts)
+
+export default FooRelatedProducts
+```
+
+关于`CustomElements`的使用可以看我之前的这篇文章，里面有详细的介绍
+
+> [👉 Custom Elements -- 原生 JS 实现组件化 WebComponent 的基石](https://juejin.cn/post/7151788510691721224)
+
+## bar 团队 -- 商品购买模块应用
+
+至于 `bar` 团队，则负责购买商品的按钮以及购物车功能，为此，要提供两个自定义元素
+
+`购买商品按钮`
+
+```ts
+import { getProductById } from '../model'
+import { state } from '../state'
+
+class PurchaseBtn extends HTMLElement {
+  private attachedShadowRoot: ShadowRoot | null = null
+
+  // 被观察的数据在更新时会触发 attributeChangedCallback 回调
+  static get observedAttributes() {
+    return ['product-id']
+  }
+
+  // 元素被注册时会调用该钩子
+  connectedCallback() {
+    const product = this.getProduct()
+    this.log(`connected! product: ${product}`)
+    this.render()
+    this.attachedShadowRoot?.addEventListener('click', this.addToBasket)
+  }
+
+  disconnectedCallback() {
+    this.attachedShadowRoot?.removeEventListener('click', this.addToBasket)
+  }
+
+  // product-id 更新时重新渲染对应的关联商品
+  attributeChangedCallback(
+    attrName: string,
+    oldValue: string,
+    newValue: string,
+  ) {
+    this.log(`attr changed: ${attrName} -- from ${oldValue} to ${newValue}`)
+
+    switch (attrName) {
+      case 'product-id':
+        this.render()
+        break
+    }
+  }
+
+  // 根据调用者传入的 prop: 商品 id 来获取商品对象
+  getProduct() {
+    const productId = this.getAttribute('product-id')
+
+    if (productId) {
+      const product = getProductById(Number(productId))
+      return product
+    }
+
+    return null
+  }
+
+  /**
+   * @description 添加商品到购物车 -- 自增 state.basketCount 并派发自定义事件 bar:basket:changed
+   */
+  addToBasket() {
+    state.basketCount++
+    this.log('派发自定义事件: bar:basket:changed')
+    this.dispatchEvent(
+      new CustomEvent('bar:basket:changed', {
+        bubbles: true,
+      }),
+    )
+  }
+
+  // html 模板
+  template() {
+    const product = this.getProduct()
+
+    const template = document.createElement('template')
+    template.innerHTML = `
+      <button>购买: ${product?.price ?? 66666} ￥</button>
+      `
+
+    return template.content.cloneNode(true)
+  }
+
+  render() {
+    const clonedTemplateNode = this.template()
+
+    this.attachedShadowRoot = this.attachShadow({ mode: 'closed' })
+    this.attachedShadowRoot.appendChild(clonedTemplateNode)
+  }
+
+  log(...args: any[]) {
+    console.log('team-bar', ...args)
+  }
+}
+
+export default PurchaseBtn
+```
+
+`购物车`
+
+```ts
+import { state } from '../state'
+
+class Basket extends HTMLElement {
+  // 元素被注册时会调用该钩子
+  connectedCallback() {
+    // this.refresh 作为事件处理函数被调用时 this 会丢失 所以需要显式绑定一下 this
+    this.refresh = this.refresh.bind(this)
+    this.render()
+    window.addEventListener('bar:basket:changed', this.refresh)
+  }
+
+  disconnectedCallback() {
+    window.removeEventListener('bar:basket:changed', this.refresh)
+  }
+
+  // html 模板
+  template() {
+    const template = document.createElement('template')
+    template.innerHTML = `
+      <section>购物车：${state.basketCount} 件</section>
+    `
+
+    return template.content.cloneNode(true)
+  }
+
+  render() {
+    const clonedTemplateNode = this.template()
+
+    this.attachShadow({ mode: 'closed' }).appendChild(clonedTemplateNode)
+  }
+
+  refresh() {
+    this.log('接收到自定义事件: bar:basket:changed')
+    this.render()
+  }
+
+  log(...args: any[]) {
+    console.log('team-bar', ...args)
+  }
+}
+
+export default Basket
+```
+
+最后还要记得注册自定义元素
+
+```ts
+window.customElements.define('bar-purchase-btn', PurchaseBtn)
+window.customElements.define('bar-basket', Basket)
+```
+
+这样我们就算是体验了一下微前端架构下的一个开发方式啦，当然这只是一个初步地探索，更深入的内容还是需要大家去[micro-frontends.org](https://micro-frontends.org/)中研究一下~
