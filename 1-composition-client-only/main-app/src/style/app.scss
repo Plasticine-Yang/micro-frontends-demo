@@ -1,0 +1,226 @@
+@use './variables-dark';
+@use './variables-light';
+
+.juejin-store {
+  // grid 布局
+  display: grid;
+  column-gap: 20px;
+  row-gap: 10px;
+
+  min-width: 300px;
+  margin: 0 150px;
+  padding: 40px 80px;
+  border-radius: 30px;
+
+  // 标题
+  .title {
+    grid-area: title;
+
+    font-size: 2rem;
+  }
+
+  // 购物车
+  .basket {
+    grid-area: basket;
+
+    justify-self: end;
+    padding: 5px 10px;
+    border-radius: 10px;
+    height: max-content;
+  }
+
+  // 商品图片预览
+  .previewer {
+    grid-area: previewer;
+
+    img {
+      border-radius: 20px;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+  }
+
+  // 商品名
+  .product-name {
+    grid-area: product-name;
+
+    font-size: 2rem;
+  }
+
+  // 商品列表
+  .product-list {
+    grid-area: product-list;
+
+    display: flex;
+    gap: 20px;
+    height: 100%;
+
+    // 商品项
+    .product-list-item {
+      display: flex;
+      align-items: flex-end;
+
+      cursor: pointer;
+      // 底部激活状态条
+      padding-bottom: 6px;
+      border-bottom: 3px solid transparent;
+      height: 100%;
+
+      img {
+        border-radius: 10px;
+        display: block;
+        width: 100%;
+        max-height: 100%;
+        object-fit: cover;
+      }
+    }
+  }
+
+  // 购买按钮
+  .purchase-btn {
+    grid-area: purchase-btn;
+
+    align-self: end;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 2rem;
+    border: none;
+
+    &:active {
+      background: rgba(30, 128, 255, 0.8);
+    }
+  }
+
+  // 关联商品
+  .related-products {
+    grid-area: related-products;
+
+    .related-product-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 20px;
+
+      .related-product-list-item {
+        cursor: pointer;
+
+        img {
+          width: 100%;
+          border-radius: 20px;
+        }
+      }
+    }
+  }
+}
+
+// 响应式布局
+@media only screen and (max-width: 1180px) {
+  // 屏幕宽度小于 1180px 时纵向排列
+  .juejin-store {
+    grid-template-areas:
+      'title            basket'
+      'product-name     product-name'
+      'previewer        previewer'
+      'product-list     product-list'
+      'purchase-btn     purchase-btn'
+      'related-products related-products';
+    grid-template-columns: 4fr 3fr;
+
+    max-height: 90vh;
+    overflow-y: scroll;
+    padding: 30px;
+
+    .title {
+      font-size: 1.5rem;
+    }
+
+    .product-name {
+      font-size: 0.5rem;
+    }
+
+    .basket {
+      font-size: 0.5rem;
+    }
+
+    .purchase-btn {
+      border-radius: 10px;
+      padding: 10px 0;
+      font-size: 1rem;
+    }
+
+    // 屏幕宽度小于 1180px 时的分割线
+    .related-products {
+      border-top: 1px dashed white;
+      padding-top: 20px;
+      margin-top: 10px;
+    }
+  }
+}
+
+@media only screen and (min-width: 1180px) {
+  // 屏幕宽度大于 1180px 时横向排列
+  .juejin-store {
+    grid-template-areas:
+      'title     basket       related-products'
+      'previewer product-name related-products'
+      'previewer product-list related-products'
+      'previewer purchase-btn related-products';
+    grid-template-columns: 3fr 4fr 200px;
+
+    .purchase-btn {
+      height: 80%;
+    }
+
+    // 屏幕宽度大于 1180px 时的分割线
+    .related-products {
+      border-left: 1px dashed gray;
+      padding-left: 20px;
+    }
+  }
+}
+
+// 深浅色模式
+@media (prefers-color-scheme: light) {
+  .juejin-store {
+    background-color: variables-light.$bg-secondary;
+
+    .basket {
+      background-color: variables-light.$bg-primary;
+    }
+
+    .product-list-item {
+      &.active,
+      &:hover {
+        border-bottom-color: variables-light.$primary-color;
+      }
+    }
+
+    .purchase-btn {
+      color: white;
+      background-color: variables-light.$primary-color;
+    }
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .juejin-store {
+    background-color: variables-dark.$bg-secondary;
+
+    .basket {
+      background-color: variables-dark.$bg-primary;
+    }
+
+    .product-list-item {
+      &.active,
+      &:hover {
+        border-bottom-color: variables-dark.$primary-color;
+      }
+    }
+
+    .purchase-btn {
+      color: white;
+      background-color: variables-dark.$primary-color;
+    }
+  }
+}
