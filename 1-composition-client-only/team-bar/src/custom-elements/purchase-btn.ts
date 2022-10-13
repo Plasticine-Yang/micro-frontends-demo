@@ -2,6 +2,8 @@ import { getProductById } from '../model'
 import { state } from '../state'
 
 class PurchaseBtn extends HTMLElement {
+  private attachedShadowRoot: ShadowRoot | null = null
+
   // 被观察的数据在更新时会触发 attributeChangedCallback 回调
   static get observedAttributes() {
     return ['product-id']
@@ -12,11 +14,11 @@ class PurchaseBtn extends HTMLElement {
     const product = this.getProduct()
     this.log(`connected! product: ${product}`)
     this.render()
-    this.shadowRoot?.addEventListener('click', this.addToBasket)
+    this.attachedShadowRoot?.addEventListener('click', this.addToBasket)
   }
 
   disconnectedCallback() {
-    this.shadowRoot?.removeEventListener('click', this.addToBasket)
+    this.attachedShadowRoot?.removeEventListener('click', this.addToBasket)
   }
 
   // product-id 更新时重新渲染对应的关联商品
@@ -74,8 +76,8 @@ class PurchaseBtn extends HTMLElement {
   render() {
     const clonedTemplateNode = this.template()
 
-    this.attachShadow({ mode: 'closed' })
-    this.shadowRoot!.appendChild(clonedTemplateNode)
+    this.attachedShadowRoot = this.attachShadow({ mode: 'closed' })
+    this.attachedShadowRoot.appendChild(clonedTemplateNode)
   }
 
   log(...args: any[]) {

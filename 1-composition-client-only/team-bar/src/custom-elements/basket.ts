@@ -26,8 +26,7 @@ class Basket extends HTMLElement {
   render() {
     const clonedTemplateNode = this.template()
 
-    this.attachShadow({ mode: 'closed' })
-    this.shadowRoot!.appendChild(clonedTemplateNode)
+    this.attachShadow({ mode: 'closed' }).appendChild(clonedTemplateNode)
   }
 
   refresh() {
