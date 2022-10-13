@@ -49,7 +49,9 @@ function createRenderer($app: App) {
       <bar-purchase-btn class="purchase-btn"></bar-purchase-btn>
 
       <!-- 关联商品 -->
-      <foo-related-products class="related-products"></foo-related-products>
+      <foo-related-products class="related-products" product-id="${
+        product?.id
+      }"></foo-related-products>
     </section>
     `
   }
